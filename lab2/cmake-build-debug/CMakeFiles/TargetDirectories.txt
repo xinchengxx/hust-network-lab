@@ -1,3 +1,0 @@
-/home/xincheng/Desktop/rdt/lab2/cmake-build-debug/CMakeFiles/stop_wait.dir
-/home/xincheng/Desktop/rdt/lab2/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/xincheng/Desktop/rdt/lab2/cmake-build-debug/CMakeFiles/rebuild_cache.dir
