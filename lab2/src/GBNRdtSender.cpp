@@ -11,27 +11,30 @@ bool GBNRdtSender::getWaitingState() {
 }
 
 bool GBNRdtSender::send(const Message &message) {
-    if ((nextSeqNum - base + mod) % mod == N) {
+    if ((nextSeqNum - base + mod) % mod < N) {
+        // this->waiting true -> nextSeqNum < base + N;
+        this->waitingState = false;
+        this->packetWaitingAck[nextSeqNum].acknum = -1;
+        this->packetWaitingAck[nextSeqNum].seqnum = this->nextSeqNum;
+        this->packetWaitingAck[nextSeqNum].checksum = 0;
+        memcpy(this->packetWaitingAck[nextSeqNum].payload, message.data, sizeof(message.data)); // 拷贝数据
+        this->packetWaitingAck[nextSeqNum].checksum = pUtils->calculateCheckSum(this->packetWaitingAck[nextSeqNum]);
+        pUtils->printPacket("发送方发送报文", this->packetWaitingAck[this->nextSeqNum]);
+        pns->sendToNetworkLayer(RECEIVER, this->packetWaitingAck[nextSeqNum]);
+
+        if (base == nextSeqNum) { //如果为窗口首元素则打开计时器
+            pns->startTimer(SENDER, Configuration::TIME_OUT, this->base);
+        }
+        this->nextSeqNum = (this->nextSeqNum + 1) % mod;
+        // base...nextSeqNum == N
+        if ((nextSeqNum - base + mod) % mod == N) {
+            this->waitingState = true;
+        }
+        return true;
+    } else {
+        this->waitingState = true;
         return false;
     }
-    // this->waiting true -> nextSeqNum < base + N;
-    assert((nextSeqNum - base + mod) % mod <= N);
-
-    this->packetWaitingAck[nextSeqNum].acknum = -1;
-    this->packetWaitingAck[nextSeqNum].seqnum = this->nextSeqNum;
-    this->packetWaitingAck[nextSeqNum].checksum = 0;
-    memcpy(this->packetWaitingAck[nextSeqNum].payload, message.data, sizeof(message.data));
-    this->packetWaitingAck[nextSeqNum].checksum = pUtils->calculateCheckSum(this->packetWaitingAck[nextSeqNum]);
-    pUtils->printPacket("发送方发送报文", this->packetWaitingAck[this->nextSeqNum]);
-    pns->sendToNetworkLayer(RECEIVER, this->packetWaitingAck[nextSeqNum]);
-    if (base == nextSeqNum) {
-        pns->startTimer(SENDER, Configuration::TIME_OUT,this->base);
-    }
-    this->nextSeqNum = (this->nextSeqNum + 1) % mod;
-    if ((nextSeqNum - base + mod) % mod == N) {
-        this->waitingState = true;
-    }
-    return true;
 }
 
 void GBNRdtSender::receive(const Packet &ackPkt) {
@@ -50,12 +53,6 @@ void GBNRdtSender::receive(const Packet &ackPkt) {
                 }
                 this->waitingState = false;
             }
-        } else {
-            //assert(this->packetWaitingAck[this->base].seqnum == this->base);
-            pUtils->printPacket("发送方没有正确收到确认，重发上次发送的报文", this->packetWaitingAck[this->base]);
-            pns->stopTimer(SENDER, this->base);									//首先关闭定时器
-            pns->startTimer(SENDER, Configuration::TIME_OUT, this->base);			//重新启动发送方定时器
-            pns->sendToNetworkLayer(RECEIVER, this->packetWaitingAck[this->base]);			//重新发送数据包
         }
 }
 

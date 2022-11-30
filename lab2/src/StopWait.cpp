@@ -19,10 +19,12 @@ int main(int argc, char* argv[])
 {
 //	RdtSender *ps = new StopWaitRdtSender();
 //	RdtReceiver * pr = new StopWaitRdtReceiver();
-    RdtSender *ps = new GBNRdtSender(Configuration::N, Configuration::k);
-    RdtReceiver *pr = new GBNRdtReceiver(Configuration::N, Configuration::k);
+//    RdtSender *ps = new GBNRdtSender(Configuration::N, Configuration::k);
+//    RdtReceiver *pr = new GBNRdtReceiver(Configuration::N, Configuration::k);
 //    RdtSender *ps = new SRRdtSender(Configuration::N, Configuration::k);
 //    RdtReceiver *pr = new SRRdtReceiver(Configuration::N, Configuration::k);
+    RdtSender *ps = new TCPSender(Configuration::N, Configuration::k);
+    RdtReceiver *pr = new TCPReceiver(Configuration::N, Configuration::k);
 	pns->setRunMode(0);  //VERBOS模式
 //	pns->setRunMode(1);  //安静模式
 	pns->init();

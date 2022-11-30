@@ -12,8 +12,7 @@ GBNRdtReceiver::GBNRdtReceiver(const int N, const int K): mod(1 << K), expectSeq
 }
 
 void GBNRdtReceiver::receive(const Packet &packet) {
-    // check sum
-    pUtils->printPacket("接收方收到发送方的报文", packet);
+
     int checkSum = pUtils->calculateCheckSum(packet);
     if (checkSum == packet.checksum) {
         if (this->expectSequenceNumberRcvd == packet.seqnum) {
@@ -25,14 +24,19 @@ void GBNRdtReceiver::receive(const Packet &packet) {
 
             lastAckPkt.acknum = packet.seqnum; //确认序号等于收到的报文序号
             lastAckPkt.checksum = pUtils->calculateCheckSum(lastAckPkt);
+
             pUtils->printPacket("接收方发送确认报文", lastAckPkt);
             pns->sendToNetworkLayer(SENDER, lastAckPkt);    //调用模拟网络环境的sendToNetworkLayer，通过网络层发送确认报文到对
+
             this->expectSequenceNumberRcvd = (this->expectSequenceNumberRcvd + 1) % mod;
-        } else if ((this->expectSequenceNumberRcvd - packet.seqnum + mod) % mod < N) {
-            lastAckPkt.acknum = packet.seqnum; //确认序号等于收到的报文序号
-            lastAckPkt.checksum = pUtils->calculateCheckSum(lastAckPkt);
-            pUtils->printPacket("接收方发送确认报文", lastAckPkt);
-            pns->sendToNetworkLayer(SENDER, lastAckPkt);
+        } else {
+            pUtils->printPacket("ERROR：接收方未收到正确报文：报文序号错误",packet);
+            pUtils->printPacket("接受方重新发送上次的确认报文",lastAckPkt);//发送上一次的确认报文
+            pns->sendToNetworkLayer(SENDER,lastAckPkt);//发送上一次的确认报文
         }
+    } else {
+        pUtils->printPacket("ERROR：接收方未收到正确报文：检验和错误",packet);
+        pUtils->printPacket("接受方重新发送上次的确认报文",lastAckPkt);//发送上一次的确认报文
+        pns->sendToNetworkLayer(SENDER,lastAckPkt);//发送上一次的确认报文
     }
 }

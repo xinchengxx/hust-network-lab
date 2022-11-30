@@ -11,8 +11,8 @@ public:
 private:
 
     int base;	// recv_base
-    Packet AckPkts[8];				//上次发送的确认报文
-    bool buffer[8]; // 标识收到的包
+    std::vector<Packet> cachedPkts;				//上次发送的确认报文
+    std::vector<bool> buffer; // 标识收到的包
     const int mod;
     int N;
 };

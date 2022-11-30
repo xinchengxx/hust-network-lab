@@ -9,14 +9,13 @@ void SRRdtReceiver::receive(const Packet &packet) {
     int checkSum = pUtils->calculateCheckSum(packet);
     if (checkSum == packet.checksum) {
         pUtils->printPacket("接收方正确收到发送方的报文", packet);
-        int last_base = base;
         if ((packet.seqnum - base + mod) % mod < N) {
             if (packet.seqnum == base) {
                 Message msg;
                 this->buffer[base] = true;
                 this->AckPkts[base] = packet;
                 memcpy(this->AckPkts[base].payload, packet.payload, sizeof(packet.payload));
-                int i;
+                int i = 0;
                 while (i < N) {
                     if (this->buffer[(base + i) % mod] == true) {
                         memcpy(msg.data, this->AckPkts[(base + i) % mod].payload, sizeof(this->AckPkts[(base + i) % mod].payload));
@@ -31,13 +30,13 @@ void SRRdtReceiver::receive(const Packet &packet) {
             } else {
                 this->AckPkts[packet.seqnum] = packet;
                 this->buffer[packet.seqnum] = true;
-                memcpy(this->AckPkts[base].payload, packet.payload, sizeof(packet.payload));
+                memcpy(this->AckPkts[packet.seqnum].payload, packet.payload, sizeof(packet.payload));
             }
             Packet ackPacket;
             ackPacket.acknum = packet.seqnum;
             //初始状态下，上次发送的确认包的确认序号为-1，使得当第一个接受的数据包出错时该确认报文的确认号为-1
             ackPacket.seqnum = -1;
-            for(int i = 0; i < Configuration::PAYLOAD_SIZE;i++){
+            for (int i = 0; i < Configuration::PAYLOAD_SIZE;i++) {
               ackPacket.payload[i] = '.';
             }
             ackPacket.checksum = pUtils->calculateCheckSum(ackPacket);
@@ -46,10 +45,9 @@ void SRRdtReceiver::receive(const Packet &packet) {
         } else if ((packet.seqnum - (base - N + mod) % mod + mod) % mod < N) {
             Packet ackPacket;
             ackPacket.acknum = packet.seqnum;
-            ackPacket.acknum = packet.seqnum;
             //初始状态下，上次发送的确认包的确认序号为-1，使得当第一个接受的数据包出错时该确认报文的确认号为-1
             ackPacket.seqnum = -1;
-            for(int i = 0; i < Configuration::PAYLOAD_SIZE;i++){
+            for (int i = 0; i < Configuration::PAYLOAD_SIZE;i++) {
                 ackPacket.payload[i] = '.';
             }
             ackPacket.checksum = pUtils->calculateCheckSum(ackPacket);

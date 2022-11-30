@@ -13,15 +13,15 @@ bool SRRdtSender::send(const Message &message) {
         return false;
     }
     // nextSeqNum - base + mod
-    assert(N > 0);
+
     assert((nextSeqNum - base + mod) % mod <= N);
     this->packetWaitingAck[nextSeqNum].acknum = -1;
     this->packetWaitingAck[nextSeqNum].seqnum = this->nextSeqNum;
     memcpy(this->packetWaitingAck[nextSeqNum].payload, message.data, sizeof(message.data));
     this->packetWaitingAck[nextSeqNum].checksum = pUtils->calculateCheckSum(this->packetWaitingAck[nextSeqNum]);
 
-    pns->startTimer(SENDER, Configuration::TIME_OUT,this->nextSeqNum);
     pUtils->printPacket("发送方发送报文", this->packetWaitingAck[this->nextSeqNum]);
+    pns->startTimer(SENDER, Configuration::TIME_OUT,this->nextSeqNum);
     pns->sendToNetworkLayer(RECEIVER, this->packetWaitingAck[nextSeqNum]);
     this->nextSeqNum = (this->nextSeqNum + 1) % mod;
     if ((nextSeqNum - base + mod) % mod == N) {
@@ -36,7 +36,6 @@ void SRRdtSender::receive(const Packet &ackPkt) {
     if (checkSum == ackPkt.checksum) {
         // 处于窗口内
         if ((ackPkt.acknum - this->base + mod) % mod < N) {
-            // 处于窗口内
             pUtils->printPacket("发送方正确收到确认", ackPkt);
             this->ackNums[ackPkt.acknum] = true;
             if (ackPkt.acknum == this->base) {
@@ -55,6 +54,8 @@ void SRRdtSender::receive(const Packet &ackPkt) {
             // 停止超时器
             pns->stopTimer(SENDER, ackPkt.acknum);
         }
+    } else {
+        pUtils->printPacket("收到ACK包校验和出错",ackPkt);
     }
 }
 
@@ -62,6 +63,7 @@ void SRRdtSender::receive(const Packet &ackPkt) {
 void SRRdtSender::timeoutHandler(int seqNum) {
     pUtils->printPacket("发送方定时器时间到，重发上次发送的报文", this->packetWaitingAck[seqNum]);
     pns->stopTimer(SENDER, seqNum);
-    pns->startTimer(SENDER, Configuration::TIME_OUT, seqNum);			//重新启动发送方定时器
     pns->sendToNetworkLayer(RECEIVER, this->packetWaitingAck[seqNum]);
+    pns->startTimer(SENDER, Configuration::TIME_OUT, seqNum);			//重新启动发送方定时器
+
 }

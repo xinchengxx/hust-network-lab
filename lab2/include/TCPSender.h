@@ -6,7 +6,7 @@
 class TCPSender: public RdtSender{
 public:
     // no use
-    bool getWaitingState() { return true; }
+    bool getWaitingState() { return waitingState; }
     bool send(const Message &message);
     TCPSender(int N, int k);
     ~TCPSender() = default;
@@ -15,13 +15,14 @@ public:
 private:
     bool start_timer;
     int timer_seq;
+    int last_ack;
     int N;
     int mod;
     int base;
     bool waitingState;
     int nextSeqNum;
-    Packet packets[8];
-    int counter[8];
+    std::vector<Packet> packets;
+    std::vector<int> counter;
 };
 
 #endif
