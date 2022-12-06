@@ -24,6 +24,16 @@ bool SRRdtSender::send(const Message &message) {
     pns->startTimer(SENDER, Configuration::TIME_OUT,this->nextSeqNum);
     pns->sendToNetworkLayer(RECEIVER, this->packetWaitingAck[nextSeqNum]);
     this->nextSeqNum = (this->nextSeqNum + 1) % mod;
+    int i = this->base;
+    printf("\n\n");
+    printf("新增加一个尚且未被确认的报文\n");
+    printf("当前窗口内容为:-----\n");
+    while (i != this->nextSeqNum) {
+        pUtils->printPacket("", this->packetWaitingAck[i]);
+        i = (i + 1) % mod;
+    }
+    printf("窗口打印完毕:------\n");
+    printf("\n\n");
     if ((nextSeqNum - base + mod) % mod == N) {
         this->waitingState = true; // 进入等待状态
     }
@@ -52,7 +62,17 @@ void SRRdtSender::receive(const Packet &ackPkt) {
                 this->base = (this->base + i) % mod;
             }
             // 停止超时器
+            int i = this->base;
             pns->stopTimer(SENDER, ackPkt.acknum);
+            printf("\n\n");
+            printf("收到确认的报文, 且确认号为%d\n", ackPkt.acknum);
+            printf("当前窗口内容为:-----\n");
+            while (i != this->nextSeqNum) {
+                pUtils->printPacket("", this->packetWaitingAck[i]);
+                i = (i + 1) % mod;
+            }
+            printf("窗口打印完毕:------\n");
+            printf("\n\n");
         }
     } else {
         pUtils->printPacket("收到ACK包校验和出错",ackPkt);

@@ -42,6 +42,8 @@ void SRRdtReceiver::receive(const Packet &packet) {
             ackPacket.checksum = pUtils->calculateCheckSum(ackPacket);
             pUtils->printPacket("接收方发送确认报文", ackPacket);
             pns->sendToNetworkLayer(SENDER, ackPacket);
+
+            // 收到base - N.... base - 1的也要返回ack
         } else if ((packet.seqnum - (base - N + mod) % mod + mod) % mod < N) {
             Packet ackPacket;
             ackPacket.acknum = packet.seqnum;

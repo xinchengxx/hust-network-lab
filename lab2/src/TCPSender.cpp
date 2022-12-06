@@ -1,8 +1,8 @@
 #include "TCPSender.h"
 #include <assert.h>
 #include "Global.h"
-// base -> 标识的是缓存的开始, base ...
-// base -> 标识了
+// base -> 标识的是缓存的开始
+
 TCPSender::TCPSender(int N, int k): mod(1 << k), N(N), nextSeqNum(0), base(0), start_timer(false), counter(1 << k), packets(1 << k) {}
 
 
@@ -19,6 +19,16 @@ bool TCPSender::send(const Message &message) {
 
     pns->sendToNetworkLayer(RECEIVER, this->packets[nextSeqNum]);
     this->nextSeqNum = (this->nextSeqNum + 1) % mod;
+    printf("\n\n");
+    printf("新增加一个尚且未被确认的报文\n");
+    printf("当前窗口内容为:-----\n");
+    int i = this->base;
+    while (i != this->nextSeqNum) {
+        pUtils->printPacket("", this->packets[i]);
+        i = (i + 1) % mod;
+    }
+    printf("窗口打印完毕:------\n");
+    printf("\n\n");
     if ((nextSeqNum - base + mod) % mod == N) {
         this->waitingState = true; // 进入等待状态
     }
@@ -53,7 +63,11 @@ void TCPSender::receive(const Packet &ackPkt) {
                     if (start_timer) {
                         pns->stopTimer(SENDER, this->timer_seq);
                     }
+                    printf("\n\n");
+                    printf("三次冗余ack---------\n");
                     pUtils->printPacket("快速重传缺失的包", this->packets[this->base]);
+                    printf("三次冗余ack----------\n");
+                    printf("\n\n");
                     pns->sendToNetworkLayer(RECEIVER, this->packets[this->base]);
                     pns->startTimer(SENDER, Configuration::TIME_OUT, this->base);
                     this->timer_seq = this->base;
@@ -66,6 +80,16 @@ void TCPSender::receive(const Packet &ackPkt) {
                     } else {
                         this->start_timer = false;
                     }
+                    int i = this->base;
+                    printf("\n\n");
+                    printf("接收到确认的报文, 且确认号%d\n", ackPkt.acknum);
+                    printf("当前窗口内容为:-----\n");
+                    while (i != this->nextSeqNum) {
+                        pUtils->printPacket("", this->packets[i]);
+                        i = (i + 1) % mod;
+                    }
+                    printf("窗口打印完毕:------\n");
+                    printf("\n\n");
                 }
                 if ((nextSeqNum - base + mod) % mod < N) {
                     this->waitingState = false;

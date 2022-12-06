@@ -50,6 +50,7 @@ void TCPReceiver::receive(const Packet &packet) {
                 pUtils->printPacket("接收方发送冗余ack", ackPacket);
                 pns->sendToNetworkLayer(SENDER, ackPacket);
             }
+            // 同样也要返回base - N, base - 1的ack
         } else if ((packet.seqnum - (base - N + mod) % mod + mod) % mod < N) {
             Packet ackPacket;
             ackPacket.acknum = packet.seqnum;
