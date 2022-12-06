@@ -46,7 +46,7 @@ void TCPSender::receive(const Packet &ackPkt) {
     if (checkSum == ackPkt.checksum) {
         // 在窗口内的包
         pUtils->printPacket("发送方接收到正确的应答报文.", ackPkt);
-        if ((ackPkt.acknum - this->base + mod) % mod < N) {
+
             // base...N - 1
                 if (last_ack != ackPkt.acknum) {
                     // 清除标记
@@ -56,6 +56,8 @@ void TCPSender::receive(const Packet &ackPkt) {
                 } else {
                     counter[last_ack]++;
                 }
+                printf("\n\n");
+                printf("ack counter %d\n%d\n", counter[ackPkt.acknum], ackPkt.acknum);
                 if (counter[ackPkt.acknum] == 3) {
                     // 重发下一个
                     assert(this->base == (ackPkt.acknum + 1) % mod);
@@ -71,6 +73,7 @@ void TCPSender::receive(const Packet &ackPkt) {
                     pns->sendToNetworkLayer(RECEIVER, this->packets[this->base]);
                     pns->startTimer(SENDER, Configuration::TIME_OUT, this->base);
                     this->timer_seq = this->base;
+                    counter[ackPkt.acknum] = 0;
                 } else {
                     this->base = (ackPkt.acknum + 1) % mod;
                     pns->stopTimer(SENDER, this->timer_seq);
@@ -94,7 +97,7 @@ void TCPSender::receive(const Packet &ackPkt) {
                 if ((nextSeqNum - base + mod) % mod < N) {
                     this->waitingState = false;
                 }
-        }
+
     }
 }
 
